@@ -1,0 +1,36 @@
+language: node_js
+node_js:
+- stable
+before_install:
+  - if [ "$TRAVIS_BRANCH" = "development" ]; then S3_BUCKET_NAME=$S3_BUCKET_DEV; fi
+  - if [ "$TRAVIS_BRANCH" = "staging" ]; then S3_BUCKET_NAME=$S3_BUCKET_STAGING; fi
+  - if [ "$TRAVIS_BRANCH" = "master" ]; then S3_BUCKET_NAME=$S3_BUCKET_PRODUCTION; fi
+  - echo $S3_BUCKET_NAME
+env:
+    global:
+      - AWS_BUCKET=$TRAVIS_BRANCH
+script:
+- if [ "$TRAVIS_BRANCH" = "development" ]; then npm run build:dev; fi
+- if [ "$TRAVIS_BRANCH" = "staging" ]; then npm run build:staging; fi
+- if [ "$TRAVIS_BRANCH" = "master" ]; then npm run build:prod; fi
+cache:
+  directories:
+    - node_modules
+deploy:
+  provider: s3
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  bucket: "$S3_BUCKET_NAME"
+  local_dir: $TRAVIS_BUILD_DIR/dist
+  skip_cleanup: true
+  # endpoint: http://devappview.247software.com.s3-website-us-west-2.amazonaws.com/
+  region: us-west-2
+  # Set the Cache-Control header....
+  # cache_control: "max-age=21600" add comment
+  on:
+    branch: $AWS_BUCKET
+branches:
+  only:
+  - development
+  - staging
+  - master
